@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,44 +6,15 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { playBeep } from "../lib/audio";
 
 interface RestTimerModalProps {
   isOpen: boolean;
   onClose: () => void;
+  timeLeft: number;
+  formatTime: (seconds: number) => string;
 }
 
-const REST_DURATION = 90; // 90 seconds
-
-export function RestTimerModal({ isOpen, onClose }: RestTimerModalProps) {
-  const [timeLeft, setTimeLeft] = useState(REST_DURATION);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setTimeLeft(REST_DURATION);
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          playBeep();
-          setTimeout(onClose, 1000);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isOpen, onClose]);
-
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
+export function RestTimerModal({ isOpen, onClose, timeLeft, formatTime }: RestTimerModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">

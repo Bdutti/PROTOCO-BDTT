@@ -5,23 +5,26 @@ import { WorkoutTabs } from "./WorkoutTabs";
 import { ExerciseCard } from "./ExerciseCard";
 import { ProgressBar } from "./ProgressBar";
 import { RestTimerModal } from "./RestTimerModal";
+import { LoadingSpinner } from "./LoadingSpinner";
+import { ErrorMessage } from "./ErrorMessage";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
+import { useRestTimer } from "../hooks/useRestTimer";
 import type { Exercise, WorkoutDay, SetProgress } from "../types";
 
 export function WorkoutTracker() {
   const [activeDay, setActiveDay] = useState(0);
-  const [showRestTimer, setShowRestTimer] = useState(false);
   const queryClient = useQueryClient();
+  const restTimer = useRestTimer({ duration: 90 });
 
-  const { data: workoutsData } = useQuery({
+  const { data: workoutsData, isLoading: workoutsLoading, error: workoutsError, refetch: refetchWorkouts } = useQuery({
     queryKey: ["workouts"],
     queryFn: () => backend.workout.getWorkouts(),
   });
 
   const currentDayKey = workoutsData?.days[activeDay]?.dayKey;
 
-  const { data: progressData } = useQuery({
+  const { data: progressData, isLoading: progressLoading, error: progressError } = useQuery({
     queryKey: ["progress", currentDayKey],
     queryFn: () => backend.progress.getProgress({ dayKey: currentDayKey! }),
     enabled: !!currentDayKey,
@@ -33,7 +36,7 @@ export function WorkoutTracker() {
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["progress", variables.dayKey] });
       if (data.completed) {
-        setShowRestTimer(true);
+        restTimer.start();
       }
     },
   });
@@ -75,12 +78,24 @@ export function WorkoutTracker() {
     return totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
   };
 
-  if (!workoutsData) {
+  if (workoutsLoading) {
+    return <LoadingSpinner text="Carregando treinos..." fullScreen />;
+  }
+
+  if (workoutsError) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-muted-foreground">Loading workouts...</div>
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <ErrorMessage
+          title="Erro ao carregar treinos"
+          message={workoutsError instanceof Error ? workoutsError.message : "Erro desconhecido"}
+          onRetry={() => refetchWorkouts()}
+        />
       </div>
     );
+  }
+
+  if (!workoutsData) {
+    return <LoadingSpinner text="Carregando treinos..." fullScreen />;
   }
 
   const currentDay = workoutsData.days[activeDay];
@@ -126,8 +141,10 @@ export function WorkoutTracker() {
       </div>
 
       <RestTimerModal
-        isOpen={showRestTimer}
-        onClose={() => setShowRestTimer(false)}
+        isOpen={restTimer.isOpen}
+        onClose={restTimer.skip}
+        timeLeft={restTimer.timeLeft}
+        formatTime={restTimer.formatTime}
       />
     </div>
   );

@@ -9,6 +9,9 @@ interface ResetDayParams {
 export const reset = api<ResetDayParams, void>(
   { expose: true, method: "POST", path: "/api/progress/reset" },
   async ({ dayKey }) => {
+    if (!dayKey || dayKey.trim() === "") {
+      throw new Error("dayKey é obrigatório");
+    }
     await db.exec`DELETE FROM progress WHERE day_key = ${dayKey}`;
   }
 );

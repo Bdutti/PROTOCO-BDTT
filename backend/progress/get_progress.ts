@@ -19,6 +19,9 @@ interface GetProgressResponse {
 export const getProgress = api<GetProgressParams, GetProgressResponse>(
   { expose: true, method: "GET", path: "/api/progress" },
   async ({ dayKey }) => {
+    if (!dayKey || dayKey.trim() === "") {
+      throw new Error("dayKey é obrigatório");
+    }
     const rows = await db.queryAll<{
       exercise_name: string;
       set_index: number;

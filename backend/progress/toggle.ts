@@ -15,6 +15,15 @@ interface ToggleSetResponse {
 export const toggle = api<ToggleSetParams, ToggleSetResponse>(
   { expose: true, method: "POST", path: "/api/progress/toggle" },
   async ({ dayKey, exerciseName, setIndex }) => {
+    if (!dayKey || dayKey.trim() === "") {
+      throw new Error("dayKey é obrigatório");
+    }
+    if (!exerciseName || exerciseName.trim() === "") {
+      throw new Error("exerciseName é obrigatório");
+    }
+    if (setIndex === undefined || setIndex < 0) {
+      throw new Error("setIndex inválido");
+    }
     const existing = await db.queryRow<{
       completed: boolean;
     }>`SELECT completed FROM progress WHERE day_key = ${dayKey} AND exercise_name = ${exerciseName} AND set_index = ${setIndex}`;
